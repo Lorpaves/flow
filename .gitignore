@@ -1,0 +1,14 @@
+build/
+.mygo/
+.local/
+.DS_Store
+*.db
+*.db-shm
+*.db-wal
+*.key
+mygo-update.key
+artifacts/linear-audit-*/
+artifacts/implementation-*/
+artifacts/logs/
+config/mcp.local.json
+config/mcp.preview.json

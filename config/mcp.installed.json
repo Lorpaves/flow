@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "flow": {
+      "command": "/Applications/Flow.app/Contents/Resources/flow-mcp",
+      "args": []
+    }
+  }
+}

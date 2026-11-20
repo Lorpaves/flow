@@ -1,0 +1,24 @@
+{
+  "version": "0.1.1",
+  "architecture": "arm64",
+  "signing": "ad-hoc",
+  "dmgAppSignatureVerified": true,
+  "files": {
+    "build/darwin-arm64/flow-0.1.1-arm64.dmg": {
+      "bytes": 12820480,
+      "sha256": "439584f830c201e11f4c8b6333cf0a9bef9d2d49010e5c57fe511b1cd31b7c1b"
+    },
+    "build/darwin-arm64/Flow.app/Contents/MacOS/Flow": {
+      "bytes": 13491472,
+      "sha256": "e21059988161ba37a68ce9f51065326c0eda0c702ddc82f556fcdaf661424f16"
+    },
+    "build/darwin-arm64/Flow.app/Contents/Resources/flow-mcp": {
+      "bytes": 16660146,
+      "sha256": "9bcf571ae1b6b188047eb71ace8574ef87d67612f8f6744d9e44ea0b0d36f880"
+    },
+    "build/darwin-arm64/Flow.app/Contents/Resources/libmygo-sqlite3.dylib": {
+      "bytes": 1551032,
+      "sha256": "f78fe493715c8b7b88aaebb275e47bbad831707d780843f078ed4a8f47de14d0"
+    }
+  }
+}

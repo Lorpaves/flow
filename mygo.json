@@ -1,0 +1,17 @@
+{
+  "name": "Flow",
+  "identifier": "com.lorpaves.flow",
+  "version": "0.1.2",
+  "out": "build",
+  "buildCommand": "make mcp",
+  "resources": [
+    ".mygo/flow-mcp"
+  ],
+  "urlSchemes": [
+    "flow"
+  ],
+  "updates": {
+    "publicKey": "XgZ0FKX7jO8b0gNUuSY0vrWkCuccbKOSI4CCuy3oPg4=",
+    "github": "Lorpaves/flow"
+  }
+}
