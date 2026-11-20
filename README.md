@@ -1,15 +1,20 @@
 # Flow
 
-个人离线项目管理应用。使用 **mygo v0.8.3 / Go 原生 UI**（随项目保留媒体与编辑器补丁，见 [补丁说明](third_party/mygo/FLOW_PATCHES.md)），界面组件来自 [Lobe UI 的 MyGo 组件库](https://mygo.lobehub.com)（随项目保留一处主题补丁，让组件使用 Flow 的配色，见 [补丁说明](third_party/lobe-mygo/FLOW_PATCHES.md)），图标为 Lucide；界面为卡片式风格：浅底上一块稍深的内容面板，任务、项目和记录是其上的白色圆角卡片，按钮与标签为胶囊形，主题色为紫色渐变；macOS 上通过 Metal 绘制，数据保存在本机 SQLite。界面参考已安装 Linear 的导航和任务组织方式；Flow 的代码、图标和数据模型独立实现。
+Flow 是一款离线优先的个人任务与项目管理桌面应用，专为 macOS 打造。应用采用纯 Go 原生界面与 Metal 渲染，启动迅速、界面清爽流畅；所有数据默认保存在本机 SQLite 数据库中，无需注册账号，也可按需开启 iCloud 多台 Mac 自动同步。支持任务列表、看板、跨项目时间线、富文本编辑、多窗口协作、应用内自动更新，以及本地 stdio MCP 服务，让 AI 工具直接读写你的个人项目工作区。
 
-## 打开应用
+## 安装与打开
 
-构建产物：
+### 通过 Homebrew 安装（推荐）
 
-- [Flow.app](build/darwin-arm64/Flow.app)
-- [macOS Apple Silicon 安装包](build/darwin-arm64/flow-0.1.1-arm64.dmg)
+```sh
+brew install --cask lorpaves/tap/flow
+```
 
-推荐打开 DMG 后将 Flow 拖到 Applications。首次启动可选择空白工作区或演示工作区。此版本为本地 ad-hoc 签名，未使用 Developer ID 公证；未验证 Intel Mac 或其他操作系统。展开的 app 也可用于本地预览；当前 iCloud 源目录会附加 Finder 元数据，正式分发请使用已验证的 DMG。
+> 当前发布版本使用 ad-hoc 签名、尚未经过 Apple 公证；如果 macOS 提示无法验证开发者，可安装时加上 `--no-quarantine` 参数，或在终端执行 `xattr -cr /Applications/Flow.app`。
+
+### 手动下载
+
+也可前往 [GitHub Releases](https://github.com/Lorpaves/flow/releases/latest) 下载对应芯片架构的 `.dmg` 安装包（Apple Silicon 选 `arm64`，Intel 选 `amd64`），拖入「应用程序」即可使用，后续版本支持应用内自动更新。首次启动可选择空白工作区或演示工作区。
 
 ## 当前源码（对齐工作进行中）
 

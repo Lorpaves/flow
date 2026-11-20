@@ -62,3 +62,65 @@ jobs:
           else
             gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --latest
           fi
+
+  homebrew:
+    needs: publish
+    if: ${{ !contains(github.ref_name, '-') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update Homebrew Cask in Lorpaves/homebrew-tap
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "$HOMEBREW_TAP_TOKEN" ]; then
+            echo "HOMEBREW_TAP_TOKEN not set; skipping Homebrew tap update."
+            exit 0
+          fi
+          version="${GITHUB_REF_NAME#v}"
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" -p SHA256SUMS -O SHA256SUMS
+          arm_sha="$(awk -v f="flow-${version}-arm64.dmg" '$2 == f {print $1}' SHA256SUMS)"
+          intel_sha="$(awk -v f="flow-${version}-amd64.dmg" '$2 == f {print $1}' SHA256SUMS)"
+          if [ -z "$arm_sha" ] || [ -z "$intel_sha" ]; then
+            echo "Missing DMG checksums in SHA256SUMS" >&2
+            exit 1
+          fi
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/Lorpaves/homebrew-tap.git" tap
+          cat > tap/Casks/flow.rb <<EOF
+          cask "flow" do
+            arch arm: "arm64", intel: "amd64"
+
+            version "${version}"
+            sha256 arm:   "${arm_sha}",
+                   intel: "${intel_sha}"
+
+            url "https://github.com/Lorpaves/flow/releases/download/v#{version}/flow-#{version}-#{arch}.dmg"
+            name "Flow"
+            desc "Personal offline project management app"
+            homepage "https://github.com/Lorpaves/flow"
+
+            livecheck do
+              url :url
+              strategy :github_latest
+            end
+
+            auto_updates true
+            depends_on macos: ">= :monterey"
+
+            app "Flow.app"
+
+            zap trash: [
+              "~/Library/Application Support/Flow",
+              "~/Library/Caches/com.lorpaves.flow",
+              "~/Library/Preferences/com.lorpaves.flow.plist",
+            ]
+          end
+          EOF
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/flow.rb
+          if ! git diff --cached --quiet; then
+            git commit -m "Update flow to ${version}"
+            git push origin HEAD
+          fi
