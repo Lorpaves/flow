@@ -16,7 +16,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-const Version = "0.1.2"
+const Version = "0.1.3"
 
 const guide = `Flow is a local personal project manager. Project IDs are opaque strings;
 issue references accept either an opaque ID or FLW-<number>. Call list tools to discover IDs.

@@ -10,6 +10,8 @@ permissions:
 jobs:
   draft-release:
     runs-on: ubuntu-latest
+    outputs:
+      already_published: ${{ steps.check.outputs.already_published }}
     steps:
       - uses: actions/checkout@v4
       - name: Check tag matches mygo.json version
@@ -19,10 +21,17 @@ jobs:
             echo "Tag $GITHUB_REF_NAME does not match mygo.json version v$version" >&2
             exit 1
           fi
-      - name: Create draft release
+      - name: Create draft release if not already published
+        id: check
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft' 2>/dev/null | grep -qx 'false'; then
+            echo "Release $GITHUB_REF_NAME is already published; skipping CI build."
+            echo "already_published=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "already_published=false" >> "$GITHUB_OUTPUT"
           if ! gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
               --draft --verify-tag --title "$GITHUB_REF_NAME" --generate-notes
@@ -30,6 +39,7 @@ jobs:
 
   build:
     needs: draft-release
+    if: needs.draft-release.outputs.already_published != 'true'
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:

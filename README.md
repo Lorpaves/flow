@@ -10,11 +10,9 @@ Flow 是一款离线优先的个人任务与项目管理桌面应用，专为 ma
 brew install --cask lorpaves/tap/flow
 ```
 
-> 当前发布版本使用 ad-hoc 签名、尚未经过 Apple 公证；如果 macOS 提示无法验证开发者，可安装时加上 `--no-quarantine` 参数，或在终端执行 `xattr -cr /Applications/Flow.app`。
-
 ### 手动下载
 
-也可前往 [GitHub Releases](https://github.com/Lorpaves/flow/releases/latest) 下载对应芯片架构的 `.dmg` 安装包（Apple Silicon 选 `arm64`，Intel 选 `amd64`），拖入「应用程序」即可使用，后续版本支持应用内自动更新。首次启动可选择空白工作区或演示工作区。
+也可前往 [GitHub Releases](https://github.com/Lorpaves/flow/releases/latest) 下载对应芯片架构的 `.dmg` 安装包（Apple Silicon 选 `arm64`，Intel 选 `amd64`），拖入「应用程序」即可使用。正式发布版本已完成 Apple Developer ID 签名与 Apple 公证，后续版本支持应用内自动更新。首次启动可选择空白工作区或演示工作区。
 
 ## 当前源码（对齐工作进行中）
 

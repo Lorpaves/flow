@@ -12,3 +12,4 @@ artifacts/implementation-*/
 artifacts/logs/
 config/mcp.local.json
 config/mcp.preview.json
+scripts/
