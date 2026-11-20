@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	appFallbackVersion   = "0.1.3"
+	appFallbackVersion   = "0.1.4"
 	updateFirstCheckWait = 10 * time.Second
 	updateCheckInterval  = 24 * time.Hour
 	updateRetryInterval  = time.Hour

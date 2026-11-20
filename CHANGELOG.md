@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.4
+
+- 设置页新增 **MCP 服务状态与管理**：实时显示本地 `flow-mcp` 连接状态与活动会话，支持开关服务、只读模式、断开会话、一键 stdio 握手自检，以及一键复制 JSON、Claude Code、Codex、Antigravity、OpenCode 客户端接入配置。
+- 优化设置页「软件更新」与 MCP 界面排版：更简洁的卡片布局、三段式自动更新选项、按钮内居中加载动画，以及点击「检查更新」时静默检查、发现新版本后再弹窗。
+
 ## 0.1.3
 
 - macOS 正式版本已通过 Apple Developer ID 代码签名与 Apple 公证（Notarization）及票据装订，安装和自动更新不再触发 Gatekeeper 安全拦截。
