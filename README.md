@@ -105,7 +105,7 @@ Flow 内置基于 MyGo `mygo.Updater` 的应用内自动更新（Ed25519 签名�
 - **检查更新**：启动后后台自动检查（每 24 小时一次），也可随时通过菜单栏「Flow › 检查更新…」、命令面板（`⌘ K`）或「设置 › 软件更新」手动检查。
 - **更新体验**：发现新版本时在顶部显示可关闭提示条并在侧栏设置图标显示提示点；应用内更新弹窗展示版本变更与 Markdown 更新日志，支持「跳过此版本」「稍后提醒」「下载并安装」和实时下载进度条；安装就绪后支持「立即重启并更新」，并在退出前自动保存所有未保存草稿。
 - **设置项**：可在「设置 › 软件更新」中开关「自动检查更新」与「自动下载更新」（偏好保存在数据目录的 `updater.json` 中）。
-- **发布流程**：`mygo.json` 已指向 GitHub 公开仓库 `Lorpaves/flow` 与 Ed25519 公钥。发布新版本时更新 `mygo.json` 版本号与 `CHANGELOG.md`，提交并推送 `vX.Y.Z` 标签即可由 `.github/workflows/release.yml` 自动构建签名更新包并上传到 GitHub Draft Release；本地也可使用 `MYGO_UPDATER_PRIVATE_KEY="$(cat ~/Library/Application\ Support/mygo/update-keys/mygo-update.key)" make release` 构建并上传。
+- **发布流程**：`mygo.json` 已指向 GitHub 公开仓库 `Lorpaves/flow` 与 Ed25519 公钥。发布新版本时更新 `mygo.json` 版本号与 `CHANGELOG.md`，提交并推送 `vX.Y.Z` 标签即可由 `.github/workflows/release.yml` 自动构建签名更新包、上传并自动正式发布为 GitHub Release（含 `-` 后缀的标签会自动标记为 Pre-release）；本地也可使用 `MYGO_UPDATER_PRIVATE_KEY="$(cat ~/Library/Application\ Support/mygo/update-keys/mygo-update.key)" make release` 构建并上传。
 
 ## 开发和构建
 
