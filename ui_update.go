@@ -152,9 +152,8 @@ func (a *app) updateSettings(c *ui.Context) {
 		svc := a.desktop.updater
 		switch st.Phase {
 		case updateChecking:
-			ui.Row(c).Gap(8).Children(func() {
+			btn(c, "").Label(a.tr("检查更新", "Check")).MinWidth(84).Center().Disabled(true).Children(func() {
 				feedback.Spin(c, feedback.SpinProps{Size: theme.Small}, nil)
-				btn(c, a.tr("检查中…", "Checking…")).Disabled(true)
 			})
 		case updateAvailable:
 			ui.Row(c).Gap(8).Children(func() {
@@ -172,7 +171,7 @@ func (a *app) updateSettings(c *ui.Context) {
 		case updateReady:
 			primary(c, a.tr("立即重启", "Restart")).OnClick(func() { svc.relaunch() })
 		default:
-			btn(c, a.tr("检查更新", "Check")).OnClick(func() { a.triggerUpdateCheck() })
+			btn(c, a.tr("检查更新", "Check")).MinWidth(84).Center().OnClick(func() { a.triggerUpdateCheck() })
 		}
 	})
 	if ok && st.Phase == updateDownloading {

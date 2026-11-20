@@ -154,20 +154,22 @@ func (a *app) mcpDialog(c *ui.Context) {
 		// Compact status strip
 		statusText, warn := a.mcpModalStatusLine(st)
 		ui.Row(c.Key("mcp-modal-status")).Padding(10, 12).Gap(8).Radius(a.tk.BorderRadius).Background(a.tk.BgContainer).AlignItems(ui.Center).Children(func() {
-			if st.Testing {
-				feedback.Spin(c, feedback.SpinProps{Size: theme.Small}, nil)
-			} else {
-				ui.Box(c).Size(7, 7).Radius(4).Background(a.mcpDotColor(st)).Shrink(0)
-			}
+			ui.Box(c).Size(7, 7).Radius(4).Background(a.mcpDotColor(st)).Shrink(0)
 			color := a.tk.Text
 			if warn {
 				color = a.tk.Error
 			}
 			ui.Text(c, statusText).FontSize(13).TextColor(color).Grow(1).MinWidth(0).SingleLine()
 			if ok {
-				quietButton(c, a.tr("测试", "Test")).Label(a.tr("测试 MCP 连接", "Test MCP")).Disabled(st.Testing || !st.Enabled || !st.BinaryFound).OnClick(func() {
-					a.desktop.mcp.runTest()
-				})
+				if st.Testing {
+					quietButton(c, "").Label(a.tr("测试 MCP 连接", "Test MCP")).MinWidth(44).Center().Disabled(true).Children(func() {
+						feedback.Spin(c, feedback.SpinProps{Size: theme.Small}, nil)
+					})
+				} else {
+					quietButton(c, a.tr("测试", "Test")).Label(a.tr("测试 MCP 连接", "Test MCP")).MinWidth(44).Center().Disabled(!st.Enabled || !st.BinaryFound).OnClick(func() {
+						a.desktop.mcp.runTest()
+					})
+				}
 			}
 		})
 
