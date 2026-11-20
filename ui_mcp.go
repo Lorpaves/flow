@@ -163,7 +163,7 @@ func (a *app) mcpDialog(c *ui.Context) {
 			if ok {
 				if st.Testing {
 					quietButton(c, "").Label(a.tr("测试 MCP 连接", "Test MCP")).MinWidth(44).Center().Disabled(true).Children(func() {
-						feedback.Spin(c, feedback.SpinProps{Size: theme.Small}, nil)
+						feedback.Spin(c, feedback.SpinProps{Size: theme.Small}, nil).AlignSelf(ui.Center)
 					})
 				} else {
 					quietButton(c, a.tr("测试", "Test")).Label(a.tr("测试 MCP 连接", "Test MCP")).MinWidth(44).Center().Disabled(!st.Enabled || !st.BinaryFound).OnClick(func() {

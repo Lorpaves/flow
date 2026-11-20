@@ -123,7 +123,7 @@ func (a *app) updateBanner(c *ui.Context) {
 			label = fmt.Sprintf(a.tr("正在下载 Flow v%s · %.0f%%", "Downloading Flow v%s · %.0f%%"), st.Version, pct)
 		}
 		ui.Row(c.Key("update-banner")).Padding(8, 12, 8, 16).Gap(10).Background(a.tk.PrimaryBg).InsetShadow(0, -1, 0, 0, a.hairline()).Children(func() {
-			feedback.Spin(c, feedback.SpinProps{Size: theme.Small}, nil)
+			feedback.Spin(c, feedback.SpinProps{Size: theme.Small}, nil).AlignSelf(ui.Center)
 			ui.Text(c, label).FontSize(13).FontWeight(500).Grow(1).MinWidth(0).SingleLine()
 			quietButton(c, a.tr("查看进度", "View progress")).OnClick(func() { a.openUpdateDialog(false) })
 		})
@@ -153,7 +153,7 @@ func (a *app) updateSettings(c *ui.Context) {
 		switch st.Phase {
 		case updateChecking:
 			btn(c, "").Label(a.tr("检查更新", "Check")).MinWidth(84).Center().Disabled(true).Children(func() {
-				feedback.Spin(c, feedback.SpinProps{Size: theme.Small}, nil)
+				feedback.Spin(c, feedback.SpinProps{Size: theme.Small}, nil).AlignSelf(ui.Center)
 			})
 		case updateAvailable:
 			ui.Row(c).Gap(8).Children(func() {
@@ -300,7 +300,7 @@ func (a *app) updateDialog(c *ui.Context) {
 
 		case st.Phase == updateChecking:
 			ui.Row(c).Padding(16, 4).Gap(12).AlignItems(ui.Center).Children(func() {
-				feedback.Spin(c, feedback.SpinProps{}, nil)
+				feedback.Spin(c, feedback.SpinProps{}, nil).AlignSelf(ui.Center)
 				ui.Text(c, a.tr("正在检查更新…", "Checking for updates…")).FontSize(14).TextColor(a.tk.TextSecondary)
 			})
 			dialogFooter(c, func() {
