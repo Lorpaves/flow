@@ -179,6 +179,7 @@ type app struct {
 	eraseOpen               bool
 	erasing                 eraseRequest // what the open erase dialog would delete for good
 	appUpdateOpen           bool
+	mcpOpen                 bool
 	segments                map[string]*boundIndex
 	sectionOpen             map[string]bool
 }

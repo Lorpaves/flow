@@ -433,7 +433,7 @@ func moveWorkspace(s *core.Store, from, to string) error {
 		os.Remove(db)
 		return err
 	}
-	for _, name := range []string{"backups", "sync", "windows", "desktop-session.json", "desktop-windows.json", "window-state.json", "updater.json"} {
+	for _, name := range []string{"backups", "sync", "windows", "desktop-session.json", "desktop-windows.json", "window-state.json", "updater.json", "mcp"} {
 		if err := copyTree(filepath.Join(from, name), filepath.Join(to, name)); err != nil {
 			return err
 		}

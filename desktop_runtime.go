@@ -85,6 +85,7 @@ func (d *desktop) windowLoaded(a *app) {
 		}
 		d.startSync()
 		d.startUpdater()
+		d.startMCP()
 	}
 	d.invalidate()
 	d.finishQuit()

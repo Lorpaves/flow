@@ -7,7 +7,7 @@ import (
 )
 
 func (a *app) navigationActionsEnabled() bool {
-	return a.ready && !a.isRestoring() && !a.helpOpen && !a.peekOpen && !a.childOpen && a.data.Preferences.Initialized && !a.newOpen && !a.projectOpen && !a.paletteOpen && !a.date.open && !a.displayOpen && !a.filterOpen && !a.saveViewOpen && !a.templateOpen && !a.relationOpen && !a.historyOpen && !a.attachmentOpen && !a.reminderOpen && !a.scheduleOpen && !a.labelOpen && !a.folderOpen && !a.milestoneOpen && !a.documentOpen && !a.updateOpen && !a.eraseOpen && !a.appUpdateOpen && (a.activePicker == nil || !a.activePicker.open)
+	return a.ready && !a.isRestoring() && !a.helpOpen && !a.peekOpen && !a.childOpen && a.data.Preferences.Initialized && !a.newOpen && !a.projectOpen && !a.paletteOpen && !a.date.open && !a.displayOpen && !a.filterOpen && !a.saveViewOpen && !a.templateOpen && !a.relationOpen && !a.historyOpen && !a.attachmentOpen && !a.reminderOpen && !a.scheduleOpen && !a.labelOpen && !a.folderOpen && !a.milestoneOpen && !a.documentOpen && !a.updateOpen && !a.eraseOpen && !a.appUpdateOpen && !a.mcpOpen && (a.activePicker == nil || !a.activePicker.open)
 }
 
 func (a *app) desktopMenuItems() []*mygo.MenuItem {

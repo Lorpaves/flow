@@ -62,6 +62,7 @@ func (a *app) commandResults() []appCommand {
 			add("restart-update", "重启并更新到 v"+st.Version, "Restart to update to v"+st.Version, "", func() { a.desktop.updater.relaunch() })
 		}
 		add("check-updates", "检查更新", "Check for updates", "", func() { a.triggerUpdateCheck() })
+		add("mcp-settings", "MCP 服务与配置", "MCP server & setup", "", func() { a.openMCPDialog() })
 		if i, ok := a.currentIssueAction(); ok {
 			hint := i.Code()
 			for _, v := range []struct{ kind, zh, en string }{{"id", "复制任务 ID", "Copy issue ID"}, {"title", "复制任务标题", "Copy issue title"}, {"url", "复制任务链接", "Copy issue URL"}, {"markdown", "复制任务 Markdown", "Copy issue Markdown"}, {"branch", "复制分支名称", "Copy branch name"}, {"prompt", "复制任务提示词", "Copy issue prompt"}} {

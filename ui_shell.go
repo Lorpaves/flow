@@ -193,6 +193,7 @@ func (a *app) view(c *ui.Context) {
 	a.organizationDialogs(c)
 	a.eraseDialog(c)
 	a.updateDialog(c)
+	a.mcpDialog(c)
 	a.observeComposition(c)
 	a.observeDesktopSession(c)
 	a.focusSeen = a.focusedIssue
@@ -783,6 +784,7 @@ func (a *app) settingsView(c *ui.Context) {
 				})
 			})
 			a.settingsCard(c, func() { a.dataSettings(c) })
+			a.settingsCard(c, func() { a.mcpSettings(c) })
 			a.settingsCard(c, func() { a.updateSettings(c) })
 			a.labelsManager(c)
 			ui.Text(c, "Flow "+a.currentAppVersion()).FontSize(12).TextColor(a.tk.TextQuaternary).Padding(0, 4)

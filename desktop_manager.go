@@ -28,6 +28,7 @@ type desktop struct {
 	restoreActive                       string
 	sync                                *syncService
 	updater                             *updateService
+	mcp                                 *mcpService
 	// missingData names a data folder Flow was moved to that is not there
 	// now; the default folder is open instead.
 	missingData string
