@@ -124,19 +124,42 @@ func detectConfiguredMCPClients() []string {
 	clients := []struct {
 		name string
 		path string
+		toml bool
 	}{
-		{"Claude Desktop", filepath.Join(home, "Library", "Application Support", "Claude", "claude_desktop_config.json")},
-		{"Claude Code", filepath.Join(home, ".claude.json")},
-		{"Cursor", filepath.Join(home, ".cursor", "mcp.json")},
-		{"Antigravity", filepath.Join(home, ".gemini", "config", "mcp_config.json")},
+		{"Claude Desktop", filepath.Join(home, "Library", "Application Support", "Claude", "claude_desktop_config.json"), false},
+		{"Claude Code", filepath.Join(home, ".claude.json"), false},
+		{"Codex", filepath.Join(home, ".codex", "config.toml"), true},
+		{"Antigravity", filepath.Join(home, ".gemini", "config", "mcp_config.json"), false},
+		{"OpenCode", filepath.Join(home, ".config", "opencode", "opencode.json"), false},
+		{"Cursor", filepath.Join(home, ".cursor", "mcp.json"), false},
 	}
 	var found []string
 	for _, c := range clients {
+		if c.toml {
+			if hasFlowTOMLConfig(c.path) {
+				found = append(found, c.name)
+			}
+			continue
+		}
 		if hasFlowMCPConfig(c.path) {
 			found = append(found, c.name)
 		}
 	}
 	return found
+}
+
+func hasFlowTOMLConfig(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	raw, err := io.ReadAll(io.LimitReader(f, 2<<20))
+	if err != nil {
+		return false
+	}
+	text := string(raw)
+	return strings.Contains(text, "[mcp_servers.flow]") || strings.Contains(text, "flow-mcp")
 }
 
 func hasFlowMCPConfig(path string) bool {
@@ -151,13 +174,16 @@ func hasFlowMCPConfig(path string) bool {
 	}
 	var doc struct {
 		MCPServers map[string]json.RawMessage `json:"mcpServers"`
+		MCP        map[string]json.RawMessage `json:"mcp"`
 	}
-	if json.Unmarshal(raw, &doc) != nil || len(doc.MCPServers) == 0 {
+	if json.Unmarshal(raw, &doc) != nil {
 		return false
 	}
-	for k, v := range doc.MCPServers {
-		if strings.EqualFold(k, "flow") || strings.Contains(string(v), "flow-mcp") {
-			return true
+	for _, group := range []map[string]json.RawMessage{doc.MCPServers, doc.MCP} {
+		for k, v := range group {
+			if strings.EqualFold(k, "flow") || strings.Contains(string(v), "flow-mcp") {
+				return true
+			}
 		}
 	}
 	return false
@@ -584,15 +610,45 @@ func mcpJSONConfig(binaryPath, dataDir string, readOnly bool) string {
 	return string(raw)
 }
 
-func mcpClaudeCLICommand(binaryPath, dataDir string, readOnly bool) string {
+type mcpClientPreset struct {
+	label string
+	json  bool
+	build func(binaryPath, dataDir string, readOnly bool) string
+}
+
+var mcpClientPresets = []mcpClientPreset{
+	{label: "JSON", json: true, build: mcpJSONConfig},
+	{label: "Claude", build: mcpClaudeCLICommand},
+	{label: "Codex", build: mcpCodexCLICommand},
+	{label: "Antigravity", build: mcpAgyCLICommand},
+	{label: "OpenCode", build: mcpOpenCodeCLICommand},
+}
+
+func mcpCLICommand(prefix []string, binaryPath, dataDir string, readOnly bool) string {
 	if binaryPath == "" {
 		binaryPath = mcpCanonicalAppPath
 	}
-	parts := []string{"claude", "mcp", "add", "--transport", "stdio", "flow", "--", shellQuote(binaryPath)}
+	parts := append(slices.Clone(prefix), shellQuote(binaryPath))
 	for _, arg := range mcpClientArgs(dataDir, readOnly) {
 		parts = append(parts, shellQuote(arg))
 	}
 	return strings.Join(parts, " ")
+}
+
+func mcpClaudeCLICommand(binaryPath, dataDir string, readOnly bool) string {
+	return mcpCLICommand([]string{"claude", "mcp", "add", "--transport", "stdio", "flow", "--"}, binaryPath, dataDir, readOnly)
+}
+
+func mcpCodexCLICommand(binaryPath, dataDir string, readOnly bool) string {
+	return mcpCLICommand([]string{"codex", "mcp", "add", "flow", "--"}, binaryPath, dataDir, readOnly)
+}
+
+func mcpAgyCLICommand(binaryPath, dataDir string, readOnly bool) string {
+	return mcpCLICommand([]string{"agy", "mcp", "add", "flow", "--"}, binaryPath, dataDir, readOnly)
+}
+
+func mcpOpenCodeCLICommand(binaryPath, dataDir string, readOnly bool) string {
+	return mcpCLICommand([]string{"opencode", "mcp", "add", "--global", "flow", "--"}, binaryPath, dataDir, readOnly)
 }
 
 func shellQuote(s string) string {

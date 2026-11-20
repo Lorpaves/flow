@@ -14,9 +14,7 @@ brew install --cask lorpaves/tap/flow
 
 也可前往 [GitHub Releases](https://github.com/Lorpaves/flow/releases/latest) 下载对应芯片架构的 `.dmg` 安装包（Apple Silicon 选 `arm64`，Intel 选 `amd64`），拖入「应用程序」即可使用。正式发布版本已完成 Apple Developer ID 签名与 Apple 公证，后续版本支持应用内自动更新。首次启动可选择空白工作区或演示工作区。
 
-## 当前源码（对齐工作进行中）
-
-上方 0.1.1 安装包是此前发布产物，下面新增能力需使用重新构建的应用。当前阶段状态和原生验收范围见 [实施验收表](docs/implementation-progress.md)。
+## 功能特性
 
 - 项目：创建、编辑、状态、起止日期、项目标签、提醒、复制与深链接、收藏、概览、进度、归档、回收站恢复。
 - 项目列表可切换跨项目时间线，支持周/月/季/年、缩放、依赖连线与拖动建立关系、联动排期、里程碑键盘导航。项目和任务可以排一段日期：在日期窗口的日历上先点开始日、再点结束日，或填“开始 → 结束”；只点一天就是截止日期。拖动条形会整段平移，拖动条形的左端或右端只改开始或结束日期。
@@ -44,7 +42,7 @@ brew install --cask lorpaves/tap/flow
 
 所有任务和子任务有独立状态；父任务完成不会自动完成子任务。回收站恢复只恢复同次删除的关联任务，保留此前单独删除的内容。回收站里可以永久删除单个任务或项目（悬停行尾的删除图标、右键菜单或任务页顶部），框选后批量恢复或永久删除，或“清空回收站”；永久删除前会确认，子任务、评论、附件、文档、提醒和历史一并删除，无法撤销。永久删除会留下一条很小的删除记录随 iCloud 同步，其他 Mac 合并时同样删除，不会被还原；另一台 Mac 在已删除项目里新建的任务会保留为无项目任务。项目进度统计包含未删除任务和子任务，排除取消及重复项。
 
-首版面向个人本地使用，不包含账号、多人协作或 Linear 数据同步。关闭程序后无需运行任何服务；打包应用已包含 SQLite 动态库，使用时无需下载依赖。
+首版面向个人本地使用，不包含账号或多人协作。关闭程序后无需运行任何服务；打包应用已包含 SQLite 动态库，使用时无需下载依赖。
 
 评论现在使用富文本编辑器，支持格式、图片、文件、粘贴和撤销；任务/项目文档与项目更新使用相同的媒体导入。文件保存到所属任务或项目，发送/保存后的正文与图片可在重启后继续查看。
 
@@ -128,6 +126,4 @@ make mcp       # 独立 stdio MCP 可执行文件
 
 正文粘贴支持保存 HTML 内嵌图片和可访问的 HTTP(S) 图片，保留文本格式和段落次序。跨任务粘贴及模板使用会保存独立附件副本；删除源附件或模板不会使新副本失效。只有图片、没有标题和文字的未完成内容也会自动保存。图片读取失败时整次粘贴保持未插入，可重试或改用本地文件。
 
-界面预览：[列表](artifacts/screenshots/01-issues.png)、[任务详情](artifacts/screenshots/02-detail.png)、[看板](artifacts/screenshots/04-board.png)、[紧凑窗口](artifacts/screenshots/08-compact-zh.png)。这些文件由 mygo Tester 渲染。当前的界面（Lobe UI 组件、标题栏与侧栏布局、应用图标、列表密度、属性栏、悬停聚焦、浮动提示、菜单与对话框的出现过渡）只经过 Tester 和自动化测试验证，尚未在原生窗口逐项实机验收；面板的出现过渡仅在原生窗口启用，Lobe 组件自带的动效（分段控件、标签页、提示）始终启用。
-
-详细记录：[Linear 的 REA + IDA 调研](docs/linear-research.md)、[验收记录](docs/verification.md)。依赖许可随应用保存在 `Contents/Resources/THIRD-PARTY-NOTICES.txt`。
+界面预览：[列表](artifacts/screenshots/01-issues.png)、[任务详情](artifacts/screenshots/02-detail.png)、[看板](artifacts/screenshots/04-board.png)、[紧凑窗口](artifacts/screenshots/08-compact-zh.png)。

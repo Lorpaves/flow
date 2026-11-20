@@ -169,48 +169,58 @@ func TestMCPSettingsAndDialogUIEndToEnd(t *testing.T) {
 	tt := ui.NewTester(a.view, 1280, 900)
 	tt.Frame()
 
-	// Run self-test directly from Settings.
-	click(t, tt, "测试 MCP 服务")
-	waitForMCPStatus(t, svc, func(s mcpStatus) bool { return !s.Testing && s.TestOK && s.TestTools == mcpToolCountFull })
-	tt.Frame()
-
 	// Toggle read-only mode in Settings.
 	click(t, tt, "切换 MCP 只读模式")
 	waitForMCPStatus(t, svc, func(s mcpStatus) bool { return s.ReadOnly })
 	tt.Frame()
 
-	// Copy JSON config directly from Settings.
-	click(t, tt, "复制 MCP JSON 配置")
-	tt.Frame()
-	if got := tt.Clipboard(); !strings.Contains(got, `"flow"`) || !strings.Contains(got, `"--read-only"`) {
-		t.Fatalf("clipboard missing MCP JSON config: %q", got)
-	}
-
-	// Open MCP management dialog, disconnect active session, copy CLI command, close.
-	click(t, tt, "管理与配置 MCP")
+	// Open MCP dialog, test server, copy JSON, switch to Claude Code tab, copy CLI, disconnect session, close.
+	click(t, tt, "配置 MCP")
 	if !a.mcpOpen {
 		t.Fatal("MCP dialog did not open")
 	}
 	tt.Frame()
 
+	click(t, tt, "测试 MCP 连接")
+	waitForMCPStatus(t, svc, func(s mcpStatus) bool { return !s.Testing && s.TestOK && s.TestTools == mcpToolCountRead })
+	tt.Frame()
+
+	click(t, tt, "复制 MCP 配置")
+	tt.Frame()
+	if got := tt.Clipboard(); !strings.Contains(got, `"flow"`) || !strings.Contains(got, `"--read-only"`) {
+		t.Fatalf("clipboard missing MCP JSON config: %q", got)
+	}
+
+	for _, tc := range []struct {
+		tab  string
+		want string
+	}{
+		{"Claude", "claude mcp add --transport stdio flow --"},
+		{"Codex", "codex mcp add flow --"},
+		{"Antigravity", "agy mcp add flow --"},
+		{"OpenCode", "opencode mcp add --global flow --"},
+	} {
+		click(t, tt, tc.tab)
+		tt.Frame()
+		click(t, tt, "复制 MCP 配置")
+		tt.Frame()
+		if got := tt.Clipboard(); !strings.Contains(got, tc.want) || !strings.Contains(got, "--read-only") {
+			t.Fatalf("%s tab clipboard mismatch: got %q, want %q", tc.tab, got, tc.want)
+		}
+	}
+
 	click(t, tt, "断开会话 7777")
 	waitForMCPStatus(t, svc, func(s mcpStatus) bool { return len(s.Sessions) == 0 })
 	tt.Frame()
 
-	click(t, tt, "复制命令")
-	tt.Frame()
-	if got := tt.Clipboard(); !strings.Contains(got, "claude mcp add --transport stdio flow") || !strings.Contains(got, "--read-only") {
-		t.Fatalf("clipboard missing Claude CLI command: %q", got)
-	}
-
-	click(t, tt, "完成")
+	tt.Key(0, ui.KeyEscape)
 	if a.mcpOpen {
-		t.Fatal("Done did not close MCP dialog")
+		t.Fatal("Escape did not close MCP dialog")
 	}
 	tt.Frame()
 
-	// Disable MCP server toggle in Settings.
-	click(t, tt, "切换 MCP 服务开关")
+	// Disable MCP toggle in Settings.
+	click(t, tt, "切换 MCP 开关")
 	waitForMCPStatus(t, svc, func(s mcpStatus) bool { return !s.Enabled })
 	tt.Frame()
 }

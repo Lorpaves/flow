@@ -153,6 +153,7 @@ type updateStatus struct {
 	Err           string
 	UserInitiated bool
 	BannerDismiss bool
+	ResultSeq     uint64
 }
 
 // updateService coordinates automatic and manual update checks, downloads and
@@ -398,6 +399,7 @@ func (s *updateService) beginCheck(user bool) {
 				st.Phase = updateError
 				st.Err = "updates_disabled"
 				st.UserInitiated = true
+				st.ResultSeq++
 			})
 		}
 		return
@@ -411,6 +413,7 @@ func (s *updateService) beginCheck(user bool) {
 				st.Version = ver
 				st.UserInitiated = true
 				st.BannerDismiss = false
+				st.ResultSeq++
 			})
 		}
 		return
@@ -472,6 +475,7 @@ func (s *updateService) beginCheck(user bool) {
 						st.Phase = updateError
 						st.Err = "updates_disabled"
 						st.UserInitiated = true
+						st.ResultSeq++
 					})
 				}
 				return
@@ -485,6 +489,7 @@ func (s *updateService) beginCheck(user bool) {
 					st.Phase = updateError
 					st.Err = msg
 					st.UserInitiated = true
+					st.ResultSeq++
 				})
 			} else {
 				s.updateStatus(func(st *updateStatus) {
@@ -511,6 +516,7 @@ func (s *updateService) beginCheck(user bool) {
 				st.Date = time.Time{}
 				st.Err = ""
 				st.BannerDismiss = false
+				st.ResultSeq++
 			})
 			return
 		}
@@ -550,6 +556,7 @@ func (s *updateService) beginCheck(user bool) {
 			st.Total = 0
 			st.Err = ""
 			st.BannerDismiss = false
+			st.ResultSeq++
 		})
 		if autoDL {
 			s.startDownload()

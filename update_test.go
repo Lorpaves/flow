@@ -297,10 +297,14 @@ func TestUpdateUIEndToEnd(t *testing.T) {
 			return nil
 		},
 	}
+	checkReady := make(chan struct{})
 	backend := &fakeUpdateBackend{
 		enabled: true,
 		current: "0.1.2",
-		checkFn: func(ctx context.Context) (updateRelease, error) { return rel, nil },
+		checkFn: func(ctx context.Context) (updateRelease, error) {
+			<-checkReady
+			return rel, nil
+		},
 	}
 	svc := newUpdateService(d.dataDir, backend, nil)
 	svc.firstCheckWait = time.Hour
@@ -310,7 +314,7 @@ func TestUpdateUIEndToEnd(t *testing.T) {
 	waitForStatus(t, svc, func(s updateStatus) bool { return s.Loaded })
 
 	tt := ui.NewTester(a.view, 1280, 820)
-	// Menu item opens the update dialog and starts checking.
+	// Menu item starts checking quietly without popping a modal while checking.
 	var checkMenu *mygo.MenuItem
 	for _, top := range a.desktopMenuItems() {
 		for _, item := range top.Submenu {
@@ -323,11 +327,16 @@ func TestUpdateUIEndToEnd(t *testing.T) {
 		t.Fatal("missing check-updates menu item")
 	}
 	checkMenu.Click(nil, nil)
-	if !a.appUpdateOpen {
-		t.Fatal("check-updates menu did not open update dialog")
+	tt.Frame()
+	if a.appUpdateOpen {
+		t.Fatal("update dialog should not open before check finds an update")
 	}
+	close(checkReady)
 	waitForStatus(t, svc, func(s updateStatus) bool { return s.Phase == updateAvailable })
 	tt.Frame()
+	if !a.appUpdateOpen {
+		t.Fatal("update dialog did not open after check found a new version")
+	}
 	if !a.updateHasBadge() {
 		t.Fatal("expected settings badge when update is available")
 	}
@@ -375,14 +384,41 @@ func TestUpdateUIEndToEnd(t *testing.T) {
 		t.Fatalf("Restart & update did not trigger relaunch (got %d)", restarts)
 	}
 
-	// Switch to Settings view in Chinese and toggle update preferences.
+	// Switch to Settings view in Chinese and toggle update mode segmented control.
 	a.appUpdateOpen = false
 	a.data.Preferences.Locale = "zh-Hans"
 	a.navigate("settings", "")
 	tt.Frame()
-	click(t, tt, "切换自动下载更新")
-	waitForStatus(t, svc, func(s updateStatus) bool { return s.AutoDownload })
-	click(t, tt, "切换自动检查更新")
-	waitForStatus(t, svc, func(s updateStatus) bool { return !s.AutoCheck })
+	click(t, tt, "自动下载")
+	waitForStatus(t, svc, func(s updateStatus) bool { return s.AutoCheck && s.AutoDownload })
+	click(t, tt, "关闭")
+	waitForStatus(t, svc, func(s updateStatus) bool { return !s.AutoCheck && !s.AutoDownload })
 	tt.Frame()
+}
+
+func TestUpdateCheckUpToDateDoesNotOpenDialog(t *testing.T) {
+	d, a, _, _ := managedTestDesktop(t)
+	backend := &fakeUpdateBackend{
+		enabled: true,
+		current: "0.1.3",
+		checkFn: func(ctx context.Context) (updateRelease, error) { return nil, nil },
+	}
+	svc := newUpdateService(d.dataDir, backend, nil)
+	svc.firstCheckWait = time.Hour
+	d.updater = svc
+	svc.start()
+	defer svc.stop()
+	waitForStatus(t, svc, func(s updateStatus) bool { return s.Loaded })
+
+	a.data.Preferences.Locale = "zh-Hans"
+	a.navigate("settings", "")
+	tt := ui.NewTester(a.view, 1280, 820)
+	tt.Frame()
+
+	click(t, tt, "检查更新")
+	waitForStatus(t, svc, func(s updateStatus) bool { return s.Phase == updateUpToDate })
+	tt.Frame()
+	if a.appUpdateOpen {
+		t.Fatal("up-to-date check should not open update dialog")
+	}
 }

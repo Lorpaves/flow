@@ -7,8 +7,6 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/markdown"
-	"github.com/lobehub/lobe-mygo/pkg/choice"
-	"github.com/lobehub/lobe-mygo/pkg/display"
 	"github.com/lobehub/lobe-mygo/pkg/feedback"
 	"github.com/lobehub/lobe-mygo/pkg/lucide"
 	"github.com/lobehub/lobe-mygo/pkg/theme"
@@ -50,9 +48,44 @@ func (a *app) openUpdateDialog(check bool) {
 func (a *app) triggerUpdateCheck() {
 	a.closePicker()
 	a.paletteOpen = false
-	a.appUpdateOpen = true
-	if a.desktop != nil && a.desktop.updater != nil {
-		a.desktop.updater.checkNow(true)
+	if a.desktop == nil || a.desktop.updater == nil {
+		return
+	}
+	st := a.desktop.updater.snapshot()
+	if st.Phase == updateAvailable || st.Phase == updateDownloading || st.Phase == updateReady {
+		a.appUpdateOpen = true
+		return
+	}
+	a.awaitingUpdateCheck = true
+	a.updateCheckSeq = st.ResultSeq
+	a.desktop.updater.checkNow(true)
+}
+
+// observeUpdateCheck opens the update dialog once a manual check finishes
+// with a new version; up-to-date and error results stay non-intrusive.
+func (a *app) observeUpdateCheck() {
+	if !a.awaitingUpdateCheck {
+		return
+	}
+	st, ok := a.currentUpdateStatus()
+	if !ok || st.Phase == updateChecking || st.ResultSeq == a.updateCheckSeq {
+		return
+	}
+	a.awaitingUpdateCheck = false
+	a.updateCheckSeq = st.ResultSeq
+	switch st.Phase {
+	case updateAvailable, updateReady:
+		a.appUpdateOpen = true
+	case updateUpToDate:
+		if a.page != "settings" {
+			a.createdIssue = ""
+			a.notice = fmt.Sprintf(a.tr("Flow v%s 已是最新版本", "Flow v%s is up to date"), a.currentAppVersion())
+		}
+	case updateError:
+		if a.page != "settings" {
+			a.createdIssue = ""
+			a.notice = a.updateErrorText(st.Err)
+		}
 	}
 }
 
@@ -107,13 +140,13 @@ func (a *app) updateBanner(c *ui.Context) {
 	}
 }
 
-// updateSettings builds the Software Updates card in the Settings page.
+// updateSettings builds a compact two-row Software Updates card in Settings.
 func (a *app) updateSettings(c *ui.Context) {
 	st, ok := a.currentUpdateStatus()
 	detail, warn := a.updateStatusText(st, ok)
-	a.settingDetail(c, a.tr("软件更新", "Software updates"), detail, warn, func() {
+	a.settingDetail(c, a.tr("软件更新", "Updates"), detail, warn, func() {
 		if !ok {
-			btn(c, a.tr("检查更新", "Check for updates")).Disabled(true)
+			btn(c, a.tr("检查更新", "Check")).Disabled(true)
 			return
 		}
 		svc := a.desktop.updater
@@ -125,21 +158,21 @@ func (a *app) updateSettings(c *ui.Context) {
 			})
 		case updateAvailable:
 			ui.Row(c).Gap(8).Children(func() {
-				btn(c, a.tr("查看更新", "View update")).OnClick(func() { a.openUpdateDialog(false) })
-				primary(c, a.tr("立即更新", "Update now")).OnClick(func() {
+				btn(c, a.tr("查看", "Details")).OnClick(func() { a.openUpdateDialog(false) })
+				primary(c, a.tr("更新", "Update")).OnClick(func() {
 					a.appUpdateOpen = true
 					svc.startDownload()
 				})
 			})
 		case updateDownloading:
 			ui.Row(c).Gap(8).Children(func() {
-				btn(c, a.tr("查看进度", "View progress")).OnClick(func() { a.openUpdateDialog(false) })
+				btn(c, a.tr("进度", "Progress")).OnClick(func() { a.openUpdateDialog(false) })
 				btn(c, a.tr("取消", "Cancel")).OnClick(func() { svc.cancelDownload() })
 			})
 		case updateReady:
-			primary(c, a.tr("重启以更新", "Restart to update")).OnClick(func() { svc.relaunch() })
+			primary(c, a.tr("立即重启", "Restart")).OnClick(func() { svc.relaunch() })
 		default:
-			btn(c, a.tr("检查更新", "Check for updates")).OnClick(func() { a.triggerUpdateCheck() })
+			btn(c, a.tr("检查更新", "Check")).OnClick(func() { a.triggerUpdateCheck() })
 		}
 	})
 	if ok && st.Phase == updateDownloading {
@@ -153,19 +186,29 @@ func (a *app) updateSettings(c *ui.Context) {
 			})
 		})
 	}
-	a.settingRow(c, a.tr("自动检查更新", "Check for updates automatically"), func() {
-		on := st.AutoCheck
-		choice.Switch(c.Key("update-auto-check"), &on, choice.SwitchProps{}).Label(a.tr("切换自动检查更新", "Toggle automatic update checks")).Disabled(!ok).OnClick(func() {
-			if ok {
-				a.desktop.updater.setAutoCheck(!st.AutoCheck)
+	a.settingRow(c, a.tr("自动更新", "Automatic updates"), func() {
+		mode := 0
+		if st.AutoCheck {
+			mode = 1
+			if st.AutoDownload {
+				mode = 2
 			}
-		})
-	})
-	a.settingDetail(c, a.tr("自动下载更新", "Download updates automatically"), a.tr("发现新版本后在后台下载并准备安装，重启后生效", "Download new versions in the background so they install on restart"), false, func() {
-		on := st.AutoDownload
-		choice.Switch(c.Key("update-auto-download"), &on, choice.SwitchProps{}).Label(a.tr("切换自动下载更新", "Toggle automatic update downloads")).Disabled(!ok || !st.AutoCheck).OnClick(func() {
-			if ok {
-				a.desktop.updater.setAutoDownload(!st.AutoDownload)
+		}
+		a.segmented(c, "update-mode", []string{a.tr("关闭", "Off"), a.tr("提醒", "Notify"), a.tr("自动下载", "Auto")}, mode, false, func(n int) {
+			if !ok {
+				return
+			}
+			svc := a.desktop.updater
+			switch n {
+			case 0:
+				svc.setAutoCheck(false)
+				svc.setAutoDownload(false)
+			case 1:
+				svc.setAutoCheck(true)
+				svc.setAutoDownload(false)
+			case 2:
+				svc.setAutoCheck(true)
+				svc.setAutoDownload(true)
 			}
 		})
 	})
@@ -177,35 +220,32 @@ func (a *app) updateStatusText(st updateStatus, running bool) (string, bool) {
 		ver = flowVersion()
 	}
 	if !running {
-		return fmt.Sprintf(a.tr("当前版本 v%s", "Version v%s"), ver), false
+		return "v" + ver, false
 	}
 	switch st.Phase {
 	case updateChecking:
-		return a.tr("正在检查更新…", "Checking for updates…"), false
+		return a.tr("正在检查…", "Checking…"), false
 	case updateAvailable:
-		return fmt.Sprintf(a.tr("当前版本 v%s · 有新版本 v%s 可用", "Version v%s · v%s available"), ver, st.Version), false
+		return fmt.Sprintf(a.tr("有新版本 v%s", "v%s available"), st.Version), false
 	case updateDownloading:
 		return fmt.Sprintf(a.tr("正在下载 v%s…", "Downloading v%s…"), st.Version), false
 	case updateReady:
-		return fmt.Sprintf(a.tr("v%s 已准备就绪，重启 Flow 后生效", "v%s is ready — restart Flow to finish updating"), st.Version), false
+		return fmt.Sprintf(a.tr("v%s 已就绪，重启后生效", "v%s ready to install"), st.Version), false
 	case updateError:
 		if st.Err == "updates_disabled" {
-			return fmt.Sprintf(a.tr("当前版本 v%s · 此构建不支持自动更新", "Version v%s · Auto-update unavailable in this build"), ver), false
+			return fmt.Sprintf(a.tr("v%s · 当前构建不可自动更新", "v%s · Unavailable in this build"), ver), false
 		}
 		return a.updateErrorText(st.Err), true
 	case updateUpToDate:
-		if !st.LastCheck.IsZero() {
-			return fmt.Sprintf(a.tr("当前已是最新版本 v%s · 上次检查 %s", "Up to date (v%s) · Last checked %s"), ver, st.LastCheck.Format("15:04")), false
-		}
-		return fmt.Sprintf(a.tr("当前已是最新版本 v%s", "Up to date (v%s)"), ver), false
+		return fmt.Sprintf(a.tr("已是最新 · v%s", "Up to date · v%s"), ver), false
 	default:
 		if !st.Enabled {
-			return fmt.Sprintf(a.tr("当前版本 v%s · 开发或只读构建", "Version v%s · Development or read-only build"), ver), false
+			return "v" + ver, false
 		}
 		if !st.LastCheck.IsZero() {
-			return fmt.Sprintf(a.tr("当前版本 v%s · 上次检查 %s", "Version v%s · Last checked %s"), ver, st.LastCheck.Format("15:04")), false
+			return fmt.Sprintf(a.tr("v%s · 上次检查 %s", "v%s · Checked %s"), ver, st.LastCheck.Format("15:04")), false
 		}
-		return fmt.Sprintf(a.tr("当前版本 v%s", "Version v%s"), ver), false
+		return "v" + ver, false
 	}
 }
 
@@ -251,9 +291,9 @@ func (a *app) updateDialog(c *ui.Context) {
 
 		switch {
 		case !ok || st.Phase == updateError && st.Err == "updates_disabled" || (!st.Enabled && st.Phase == updateIdle):
-			feedback.Alert(c, a.tr("此构建不支持自动更新", "Automatic updates are unavailable"), feedback.AlertProps{
+			feedback.Alert(c, a.tr("当前构建不支持自动更新", "Automatic updates unavailable"), feedback.AlertProps{
 				Type:        feedback.Info,
-				Description: a.tr("当前为开发构建，或应用所在目录不可写。安装正式签名的发布版本到「应用程序」文件夹后即可自动更新。", "This is a development build or its install folder isn’t writable. Install a signed release in Applications to enable automatic updates."),
+				Description: a.tr("请安装正式版本到「应用程序」文件夹。", "Install a signed release in Applications to enable updates."),
 			})
 			dialogFooter(c, func() {
 				primary(c, a.tr("知道了", "OK")).OnClick(func() { a.appUpdateOpen = false })
@@ -262,7 +302,7 @@ func (a *app) updateDialog(c *ui.Context) {
 		case st.Phase == updateChecking:
 			ui.Row(c).Padding(16, 4).Gap(12).AlignItems(ui.Center).Children(func() {
 				feedback.Spin(c, feedback.SpinProps{}, nil)
-				ui.Text(c, a.tr("正在检查新版本…", "Checking for new versions…")).FontSize(14).TextColor(a.tk.TextSecondary)
+				ui.Text(c, a.tr("正在检查更新…", "Checking for updates…")).FontSize(14).TextColor(a.tk.TextSecondary)
 			})
 			dialogFooter(c, func() {
 				btn(c, a.tr("取消", "Cancel")).OnClick(func() {
@@ -274,12 +314,7 @@ func (a *app) updateDialog(c *ui.Context) {
 		case st.Phase == updateUpToDate:
 			ui.Row(c).Padding(12, 14).Gap(10).Radius(a.tk.BorderRadius).Background(a.tk.SuccessBg).AlignItems(ui.Center).Children(func() {
 				ui.Icon(c, lucide.CircleCheck()).FontSize(18).TextColor(a.tk.Success)
-				ui.Column(c).Grow(1).MinWidth(0).Gap(2).Children(func() {
-					ui.Text(c, fmt.Sprintf(a.tr("Flow v%s 已是最新版本", "Flow v%s is up to date"), a.currentAppVersion())).FontWeight(500)
-					if !st.LastCheck.IsZero() {
-						ui.Text(c, fmt.Sprintf(a.tr("检查时间：%s", "Last checked at %s"), st.LastCheck.Format("15:04"))).FontSize(12).TextColor(a.tk.TextSecondary)
-					}
-				})
+				ui.Text(c, fmt.Sprintf(a.tr("Flow v%s 已是最新版本", "Flow v%s is up to date"), a.currentAppVersion())).FontWeight(500)
 			})
 			dialogFooter(c, func() {
 				btn(c, a.tr("重新检查", "Check again")).OnClick(func() { svc.checkNow(true) })
@@ -287,24 +322,15 @@ func (a *app) updateDialog(c *ui.Context) {
 			})
 
 		case st.Phase == updateAvailable:
-			ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
-				display.Tag(c, "v"+st.Version, display.TagProps{Color: "purple"})
-				ui.Text(c, a.tr("已通过签名校验配置，支持增量更新", "Signed release with delta update support")).FontSize(12).TextColor(a.tk.TextTertiary)
-			})
 			if strings.TrimSpace(st.Notes) != "" {
-				ui.Column(c).Gap(6).Children(func() {
-					ui.Text(c, a.tr("更新内容", "Release notes")).FontSize(12).FontWeight(500).TextColor(a.tk.TextSecondary)
-					ui.Scroll(c.Key("update-notes")).MaxHeight(240).Padding(12, 14).Radius(a.tk.BorderRadius).Background(a.tk.BgContainer).Border(1, a.hairline()).Children(func() {
-						markdown.View(c, st.Notes, &markdown.Options{
-							OnLink: func(u string) { mygo.Shell.OpenExternal(u) },
-						}).FontSize(13)
-					})
+				ui.Scroll(c.Key("update-notes")).MaxHeight(240).Padding(12, 14).Radius(a.tk.BorderRadius).Background(a.tk.BgContainer).Border(1, a.hairline()).Children(func() {
+					markdown.View(c, st.Notes, &markdown.Options{
+						OnLink: func(u string) { mygo.Shell.OpenExternal(u) },
+					}).FontSize(13)
 				})
-			} else {
-				ui.Text(c, a.tr("包含最新功能改进与问题修复。", "Includes the latest improvements and bug fixes.")).FontSize(13).TextColor(a.tk.TextSecondary)
 			}
 			ui.Row(c).Gap(8).Margin(4, 0, 0, 0).AlignItems(ui.Center).Children(func() {
-				quietButton(c, a.tr("跳过此版本", "Skip this version")).OnClick(func() {
+				quietButton(c, a.tr("跳过", "Skip")).OnClick(func() {
 					svc.skipCurrent()
 					a.appUpdateOpen = false
 				})
@@ -315,7 +341,7 @@ func (a *app) updateDialog(c *ui.Context) {
 
 		case st.Phase == updateDownloading:
 			pct := updateProgressPercent(st)
-			ui.Column(c).Gap(10).Padding(4, 0).Children(func() {
+			ui.Column(c).Gap(8).Padding(4, 0).Children(func() {
 				feedback.Progress(c, pct, feedback.ProgressProps{
 					Status:   feedback.ProgressActive,
 					Size:     theme.Large,
@@ -323,10 +349,9 @@ func (a *app) updateDialog(c *ui.Context) {
 					Label:    a.downloadProgressLabel(st),
 					Format:   func(p float32) string { return fmt.Sprintf("%.0f%%", p) },
 				})
-				ui.Text(c, a.tr("下载与签名校验在后台进行，你可以关闭此窗口继续工作。", "Download and signature verification run in the background. You can close this dialog and keep working.")).FontSize(12).TextColor(a.tk.TextTertiary)
 			})
 			dialogFooter(c, func() {
-				btn(c, a.tr("取消下载", "Cancel download")).OnClick(func() { svc.cancelDownload() })
+				btn(c, a.tr("取消", "Cancel")).OnClick(func() { svc.cancelDownload() })
 				btn(c, a.tr("后台继续", "Hide")).OnClick(func() { a.appUpdateOpen = false })
 			})
 

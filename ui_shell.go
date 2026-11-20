@@ -26,6 +26,7 @@ func (a *app) view(c *ui.Context) {
 	a.peekShortcuts(c)
 	a.themeFrame(c)
 	a.forgetGone()
+	a.observeUpdateCheck()
 	a.trackFocus(c)
 	c.SetMenuPresentation(ui.PopoverMenus)
 	a.refreshDesktopMenu()
